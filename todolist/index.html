@@ -1,0 +1,157 @@
+<!--Сообщаем браузеру как стоит обрабатывать эту страницу (сообщаем браузеру, что содержимое файла нужно показывать как веб-страницу)-->
+<!DOCTYPE html>
+
+            <!-- Оболочка документа, указываем язык содержимого -->
+<html lang="ru">
+
+        <!-- Заголовок страницы, контейнер для других важных данных(не отображается) -->
+        <head>
+            <!-- Заголовок страницы браузера(это название страницы, выводится в табе браузера) -->
+            <title>Task list "ToDo List"</title>
+            <!-- Кодировка страницы (это служебная информация для браузера, пока можно не вникать) -->
+            <meta charset="utf-8">
+            <meta http-equiv="X-UA-Compatible" content="IE-edge">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            
+            <!-- Чтобы использовать CSS-элементы внутри страницы, их помещают в служебный раздел <head> (как здесь). Компьютер должен знать, что это именно стили для внешнего вида, а не команды что-то показать, поэтому они пишутся внутри тега <style> -->
+            <style type="text/css">
+            /* Задаём общие параметры для всей страницы: шрифт и отступы */
+            body {
+                text-align: center; /* Выровнять текст */
+                margin: 10; /* Поле */
+                font-family: Verdana, Arial, sans-serif; /* Семейство шрифтов */
+                font-size: 16px; /* Размер шрифта */
+            }
+            /* Настраиваем внешний вид поля ввода */
+            input {
+                display: inline-block; /* Встроенный блок */
+                margin: 20px auto; /* Поле */
+                border: 2px solid #eee;
+                padding: 10px 20px; /* Набивка ??? */
+                font-family: Verdana, Arial, sans-serif; /* Семейство шрифтов */
+                font-size: 16px;
+            }
+            /* Как будет выглядеть каждый элемент нашего списка */
+            .tdItem {
+                text-align: left;
+                padding: 10px;
+                cursor: default;
+                border-radius: 7px;
+            }
+            /* Что произойдёт, когда мы наведём курсор на любую задачу из списка */
+            .tdItem:hover {
+                background-color: lightblue;
+            }
+
+            .buttonClear {
+                background-color: #4CAF50; /* Green */
+                border: none;
+                color: white;
+                padding: 16px 16px;
+                text-align: center;
+                text-decoration: none;
+                display: inline-block;
+                font-size: 16px;
+            }
+            /* Закончили со стилями */
+
+            </style>            
+            <!-- Задаём параметры для всей страницы: шрифт и отступы -->
+           
+        </head>
+
+        <!-- Отображаемое тело страницы -->
+        <body>
+            <!-- Ограничиваем ширину списка задач и ставим его по центру -->
+           <div class="container" style="width: 400px; margin:auto;">
+           <!-- Заголовок списка -->     
+           <h2 class="todo__caption">Task list</h2>
+            <!-- Дальше будет поле ввода, куда пишем новые задачи -->
+            <div id="tdlApp">
+                <!-- Создаём пока ещё пустой список -->
+                <input id="input" type="text" class="form-control" placeholder="New task">
+                <div class="tdlDiv">
+                    <button class="buttonClear" onclick="firstButton()">Clear all</button>
+                    <ul class="tdList list-unstyled">
+                        <!-- Тут появятся наши задачи, когда мы их добавим -->
+                    </ul>
+                </div>
+
+            </div>
+            <!-- Закончили с оформлением списка -->
+           </div>
+           <!-- Закончилась видимая часть -->
+
+           <script>
+
+              var Clear = function firstButton(){
+
+               }
+
+
+                // Заводим переменные под наши задачи   
+                // document.getelementbytagname (ul)  - getelementbyclassname   - getelementbyId             
+               var List = document.getElementsByClassName('#tdlApp ul');
+               var Mask = 'tdl_'
+            // Функция , которая берет из памяти наши задачи и делает из них список
+               function showTasks() {
+                   // узнаём размер хранилища
+                   var Storage_size = localStorage.length;
+                   // Если в хранилище что-то есть ...
+                   if (Storage_size > 0) {  
+                       // ... то берём, и добавляем это в задачи ... 
+                        for (var i = 0; i<Storage_size; i++){
+                            var key = localStorage.key(i);
+                            if (key.indexOf(Mask) == 0 ) {
+                                // и делаем это элементами списка
+                                $('<li></li>').addClass('tdItem')     // +
+                                .attr('data-itemid',key)
+                                .text(localStorage.getItem(key))
+                                .appendTo(List);
+                            }
+                        }
+                   }
+               }
+               // Если в хранилище уже есть какие-то задачи, то показываем их
+               showTasks();  // Теперь при запуске скрипта он проверяет, нет ли чего-то старого в памяти, и как бы «вспоминает» задачи.
+
+               // Теперь нужно сделать так, чтобы мы могли вводить эти задачи. Когда пользователь ввёл текст в поле на странице и нажал Enter. Если он хоть что-то написал — запоминаем это и добавляем в список.
+               var input = document.getElementById('input')
+               input.addEventListener('keydown', function(e){
+                if(e.keyCode !=13) return;                    
+                   var str = e.target.value;
+                   e.target.value = "";
+                    // Если в поле ввода было что-то написано - начинаем обрабатывать ...
+                    if (str.length > 0) {
+                        var number_Id = 0;
+                        List.children().each(function(index, el) {
+                            var element_Id = $(el).attr('data-itemid').slice(4);
+                            if (element_Id > number_Id)
+                            number_Id = element_Id;
+                        })
+                    
+               number_Id++;
+
+               // Отправляем новую задачу прямо в память ...
+               localStorage.setItem(Mask + number_Id, str);
+               // ... и добавляем её в конец списка.
+               $('<li></li>').addClass('tdItem')    // var A  =  document.createelement('li')
+               .attr('data-itemid', Mask + number_Id)       // A.innerHTML = 
+               .text(str).appendTo(List)
+                    }
+                
+               });
+               
+                // Теперь наша программа умеет запоминать задачи, которые вы ввели в поле ввода. Это происходит по нажатию клавиши Enter. Осталось сделать так, чтобы по клику на любой строке в перечне задач она исчезала из памяти и убиралась из списка:
+                $(document).on('click', '.tdItem', function(e){   // функция getelementbyId !!!
+                    // Находим задачу по которой кликнули
+                    var jet = $(e.target);
+                    // Убираем её из памяти
+                    localStorage.removeItem(jet.attr('data-itemid'))
+                    // и убираем её из списка
+                    jet.remove();   
+
+                })
+           </script>
+        </body>
+</html>        

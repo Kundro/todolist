@@ -1,0 +1,249 @@
+﻿@model List<Modeles.Car>
+
+<style>
+    .pagination {
+        display: inline-block;
+    }
+
+        .pagination a {
+            color: black;
+            float: left;
+            padding: 8px 16px;
+            text-decoration: none;
+        }
+
+    .item2 {
+        grid-area: menu;
+    }
+
+    .item3 {
+        grid-area: main;
+    }
+
+    .grid-container {
+        display: grid;
+        grid-template-areas: 'header header header header header header' 'menu main main main right right' 'menu footer footer footer footer footer';
+        grid-gap: 10px;
+        padding: 10px;
+    }
+
+    .card {
+        box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+        transition: 0.3s;
+        display: flex;
+        width: 90%;
+        margin: 5px
+    }
+
+        .card:hover {
+            box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2);
+        }
+
+    .container {
+        padding: 2px 16px;
+    }
+</style>
+
+@if (User.IsInRole("admin"))
+{
+    <a href="admin">Admin panel </a>
+}
+
+
+<div class="grid-container">
+    <div class="item2" id="searchDiv">
+        <label>Car</label>
+        <select id="selectCar">
+            <option default value="-1">Select car</option>
+            @foreach (var car in Model)
+            {
+                <option value="@car.Id">@car.Model @car.Marka</option>
+            }
+        </select>
+        <label>Name</label>
+        <input id="articleInput" type="text" />
+    </div>
+    <div class="item3">
+        <ul id="lisOfPare"></ul>
+        <div class="pagination">
+        </div>
+    </div>
+</div>
+
+
+
+<script>
+    const getCard = (artile) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        const img = getImg(artile);
+        card.appendChild(img);
+        const container = getContainer(artile);
+        card.appendChild(container);
+        return card;
+    }
+
+    const getContainer = (article) => {
+        const container = document.createElement('div');
+        container.className = 'container';
+        const title = getTitle(article.NameSpare, article.Price);
+        container.appendChild(title);
+        const description = getDescription(article.Description);
+        container.appendChild(description);
+        container.appendChild(getButon(article));
+        /*if (User.IsInRole("manager"))
+        {
+            container.appendChild(getButonAuc(article));
+        }*/
+        container.appendChild(getButonAuc(article));
+        return container;
+    }
+
+    const getButon = (spare) => {
+        const button = document.createElement('button');
+        button.onclick = (e) => {
+            e.preventDefault();
+
+            const form = {
+                spareId: spare.Id,
+            };
+
+            const config = {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(form),
+            };
+            fetch("/api/store", config);
+        }
+        button.appendChild(document.createTextNode("Order"))
+        return button;
+    }
+
+
+    const getButonAuc = (spare) => {
+         var a = '@User.IsInRole("manager")';
+
+        if (a == 'True') {
+            const button = document.createElement('button');
+            button.onclick = (e) => {
+                e.preventDefault();
+
+                const form = {
+                    spareId: spare.Id,
+                    article: spare.article,
+                };
+
+                const config = {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(form),
+                };
+                fetch("/auction/create", config);
+            }
+
+            button.appendChild(document.createTextNode('Add to auction'));
+            return button;
+        }
+        else {
+            const p = document.createElement('p');
+            return p;
+        }
+    } 
+
+    const getTitle = (title, price) => {
+        const h4 = document.createElement('h4');
+        const b = document.createElement('b');
+        const text = document.createTextNode(title);
+        const priceText = document.createTextNode(" " + price + " USD ");
+        b.appendChild(text);
+        h4.appendChild(b);
+        h4.appendChild(priceText);
+        return h4;
+    }
+
+    const getDescription = (description) => {
+        const p = document.createElement('p');
+        const text = document.createTextNode(description);
+        p.appendChild(text);
+        return p;
+    }
+
+    const getImg = (artile) => {
+        const img = document.createElement('img');
+        img.src = artile.Photo;
+        img.alt = artile.NameSpare;
+        img.style.width = '20%';
+        img.style.height = '150px';
+        return img;
+    }
+
+    const fetchSpare = async () => {
+        //console.log(queryParams.page);
+        var query = window.location.search.substring(1); // Remove question mark
+        var parameters = query.split('&');
+        let page = parameters[0].split('=')[1] * 5 || 0;
+        console.log(parameters[0].split('=')[1]);
+        return fetch("odata/spare?$top=5&$count=true&$skip="+page).then((x) => x.json());
+    }
+
+    function drawSpare(spares) {
+        const listOdPare = document.getElementById("lisOfPare");
+        spares.forEach((spare) => {
+            listOdPare.appendChild(getCard(spare));
+        });
+    }
+
+    const fetchSpareAndDraw = async () => {
+        const spares = await fetchSpare();
+        drawSpare(spares.value);
+        //debugger;
+        drawPagination(spares["@@odata.count"]);
+    }
+
+    const drawPagination = (length) => {
+        const totalCount = length / 5;
+        const pagination = document.getElementsByClassName("pagination")[0];
+        if (totalCount > 1) {
+            pagination.appendChild(getPageLink("&laquo;"));
+
+            for (let page = 0; page < totalCount; page++) {
+                pagination.appendChild(getPageLink(page));
+            }
+            pagination.appendChild(getPageLink("&raquo;"));
+        }
+    }
+
+    const getPageLink = (value) => {
+        const linkLast = document.createElement("a");
+        linkLast.setAttribute("href", `https://localhost:44303/?page=${value}`);
+        linkLast.appendChild(document.createTextNode(value + 1));
+        return linkLast;
+    }
+
+    fetchSpareAndDraw();
+
+</script>
+
+<script>
+    async function handlerOnClick() {
+        const name = document.getElementById("articleInput").value;
+        const carId = document.getElementById("selectCar").value;
+        const form = {
+            Name: name,
+            Id: carId
+        };
+        const query = await fetch(`api/spares/fiend`, {
+            method: 'POST',
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(form),
+        });
+        const spares = await query.json();
+        document.getElementById("lisOfPare").innerHTML = "";
+        drawSpare(spares);
+    }
+
+    const button = document.createElement("button");
+    button.onclick = handlerOnClick;
+    button.append(document.createTextNode("Find"));
+    document.getElementById("searchDiv").appendChild(button);
+</script>
